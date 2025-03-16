@@ -1,0 +1,12 @@
+Final calibrated offsets (STATIC ERROR VALUES):
+accel offsets (X,Y,Z): -440, -67, 1606
+gyro offsets (X,Y,Z): 113, -9, 43
+
+
+Final calibrated offsets (STATIC ERROR VALUES):
+accel offsets (X,Y,Z): -442, -67, 1606
+gyro offsets (X,Y,Z): 113, -9, 44
+
+Final calibrated offsets (STATIC ERROR VALUES):
+accel offsets (X,Y,Z): -434, -71, 1604
+gyro offsets (X,Y,Z): 112, -9, 43
