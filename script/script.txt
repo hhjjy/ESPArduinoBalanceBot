@@ -1,0 +1,5 @@
+conda create -n balancebot python=3.9
+
+conda activate balancebot
+conda install numpy matplotlib
+pip install control
