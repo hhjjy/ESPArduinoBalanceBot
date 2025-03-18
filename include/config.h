@@ -23,7 +23,7 @@
 #define MOTOR2_ENB 1
 
 // 馬達共用控制腳位
-#define MOTOR_STBY 17
+#define MOTOR_STBY 9
 
 // OLED 
 #define OLED_WIDTH 128      // OLED 顯示器寬度，常見值為 128 像素
