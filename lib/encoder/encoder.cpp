@@ -14,7 +14,12 @@ Encoder::Encoder(uint8_t pinA, uint8_t pinB, String name, int pulsesPerRev) {
     _lastTime = 0;
     _lastStateA = false;
     _lastStateB = false;
-    _direction = 0;
+    _direction = STOPPED;
+    _inverted = false;
+    
+    // Add low-pass filter for RPM smoothing
+    _lastRPM = 0.0;
+    _filterCoef = 0.2; // Adjust this value between 0-1 (lower = more filtering)
 }
 
 void Encoder::begin(int encoderIndex) {
@@ -47,6 +52,14 @@ void Encoder::setPulsesPerRev(int pulsesPerRev) {
     _pulsesPerRev = pulsesPerRev;
 }
 
+void Encoder::setInverted(bool inverted) {
+    _inverted = inverted;
+}
+
+bool Encoder::isInverted() const {
+    return _inverted;
+}
+
 float Encoder::getRPM() const {
     return _rpm;
 }
@@ -55,7 +68,7 @@ long Encoder::getPulseCount() const {
     return _pulseCount;
 }
 
-int8_t Encoder::getDirection() const {
+EncoderDirection Encoder::getDirection() const {
     return _direction;
 }
 
@@ -72,19 +85,41 @@ void Encoder::update() {
     unsigned long currentTime = millis();
     unsigned long timeElapsed = currentTime - _lastTime;
     
-    if (timeElapsed >= 100) {  // Update every 100ms
+    // Only update if enough time has passed (at least 50ms for better accuracy)
+    if (timeElapsed >= 50) {
+        // Save the current pulse count to a local variable
+        volatile long currentPulseCount = _pulseCount;
+        
         // Calculate RPM: (pulses / pulses_per_rev) * (60000 / timeElapsed)
-        _rpm = (float)(abs(_pulseCount) * 600) / (_pulsesPerRev * timeElapsed);
+        // For high-resolution encoders, this formula needs to be precise
+        float instantRPM = (float)(abs(currentPulseCount) * 60000.0) / (_pulsesPerRev * timeElapsed);
         
-        // Set direction to 0 if not moving
-        if (_pulseCount == 0) {
-            _direction = 0;
+        // Apply low-pass filter for smoothing
+        _rpm = _filterCoef * instantRPM + (1.0 - _filterCoef) * _lastRPM;
+        _lastRPM = _rpm;
+        
+        // Set direction based on pulse count, considering inversion
+        if (currentPulseCount == 0) {
+            _direction = STOPPED;
         } else {
-            _direction = (_pulseCount > 0) ? 1 : -1;
-        }
-        
+            // Apply inversion if needed
+            bool isForward = (currentPulseCount > 0);
+            if (_inverted) {
+                isForward = !isForward;
+    }
+            
+            _direction = isForward ? FORWARD : BACKWARD;
+}
+
+        // Reset the pulse count and update the last time
+        _pulseCount = 0;
         _lastTime = currentTime;
-        _pulseCount = 0;  // Reset pulse count for next calculation
+        
+        // Debug output for troubleshooting
+        Serial.print(">"); Serial.print(_name); Serial.print("_pulses:");
+        Serial.println(currentPulseCount);
+        Serial.print(">"); Serial.print(_name); Serial.print("_timeElapsed:");
+        Serial.println(timeElapsed);
     }
 }
 
@@ -93,8 +128,8 @@ void Encoder::teleplotOutput() const {
     Serial.println(_rpm);
     
     Serial.print(">"); Serial.print(_name); Serial.print("_direction:");
-    Serial.println(_direction);
-}
+    Serial.println(static_cast<int>(_direction));
+    }
 
 void Encoder::handleEncoderInterrupt() {
     // Read current states
@@ -109,7 +144,7 @@ void Encoder::handleEncoderInterrupt() {
                 _pulseCount--;
             } else {
                 _pulseCount++;
-            }
+}
         } else { // stateB changed
             if (stateA == stateB) {
                 _pulseCount++;
