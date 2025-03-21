@@ -35,17 +35,23 @@ void Motor::setSpeed(int speed) {
     }
     
     // Set direction based on speed sign
-    if (speed >= 0) {
+    if (speed > 0) {
+        // 正向旋轉
         digitalWrite(_ain1Pin, HIGH);
         digitalWrite(_ain2Pin, LOW);
         analogWrite(_pwmPin, speed);
-    } else {
+    } else if (speed < 0) {
+        // 反向旋轉
         digitalWrite(_ain1Pin, LOW);
         digitalWrite(_ain2Pin, HIGH);
         analogWrite(_pwmPin, -speed);
+    } else {
+        // 速度為0時，將兩個方向引腳都設為低電平，實現滑行停止
+        digitalWrite(_ain1Pin, LOW);
+        digitalWrite(_ain2Pin, LOW);
+        analogWrite(_pwmPin, 0);
     }
 }
-
 void Motor::setRunning(bool isRunning) {
     _isRunning = isRunning;
     
